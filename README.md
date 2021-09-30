@@ -1,2 +1,3 @@
-# cwv-tech-report
-Core Web Vitals Technology Report
+# Core Web Vitals Technology Report
+
+Public dashboard: https://httparchive.org/reports/cwv-tech
