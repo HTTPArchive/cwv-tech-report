@@ -23,11 +23,12 @@ try {
 }
 ''';
 
-CREATE TEMP FUNCTION GET_DATE() RETURNS DATE AS (
-  CAST('2021-07-01' AS DATE)
-);
-
-WITH geo_summary AS (
+WITH unique_categories AS (
+  SELECT
+    ARRAY_AGG(DISTINCT LOWER(category)) AS categories
+  FROM
+    `httparchive.technologies.2021_09_01_mobile`
+), geo_summary AS (
   SELECT
     CAST(REGEXP_REPLACE(CAST(yyyymm AS STRING), r'(\d{4})(\d{2})', r'\1-\2-01') AS DATE) AS date,
     * EXCEPT (country_code),
@@ -42,6 +43,7 @@ UNION ALL
     `chrome-ux-report.materialized.device_summary`
 ), crux AS (
   SELECT
+    date,
     geo,
     CONCAT(origin, '/') AS url,
     IF(device = 'desktop', 'desktop', 'mobile') AS client,
@@ -65,40 +67,43 @@ UNION ALL
   FROM
     geo_summary
   WHERE
-    date = '2021-07-01' AND
+    date >= '2020-01-01' AND
     device IN ('desktop', 'phone')
 ), technologies AS (
   SELECT DISTINCT
-    category,
+    CAST(REGEXP_REPLACE(_TABLE_SUFFIX, r'(\d)_(\d{2})_(\d{2}).*', r'202\1-\2-\3') AS DATE) AS date,
+    IF(category != '' AND LOWER(category) IN UNNEST((SELECT categories FROM unique_categories)), category, NULL) AS category,
     app,
-    _TABLE_SUFFIX AS client,
+    IF(ENDS_WITH(_TABLE_SUFFIX, 'desktop'), 'desktop', 'mobile') AS client,
     url
   FROM
-    `httparchive.technologies.2021_07_01_*`
+    `httparchive.technologies.202*`
   WHERE
     app IS NOT NULL AND
     app != ''
 ), summary_stats AS (
   SELECT
-    _TABLE_SUFFIX AS client,
+    CAST(REGEXP_REPLACE(_TABLE_SUFFIX, r'(\d)_(\d{2})_(\d{2}).*', r'202\1-\2-\3') AS DATE) AS date,
+    IF(ENDS_WITH(_TABLE_SUFFIX, 'desktop'), 'desktop', 'mobile') AS client,
     url,
     bytesTotal,
     bytesJS,
     bytesImg
   FROM
-    `httparchive.summary_pages.2021_07_01_*`
+    `httparchive.summary_pages.202*`
 ), lighthouse AS (
   SELECT
-    _TABLE_SUFFIX AS client,
+    CAST(REGEXP_REPLACE(_TABLE_SUFFIX, r'(\d)_(\d{2})_(\d{2}).*', r'202\1-\2-\3') AS DATE) AS date,
+    IF(ENDS_WITH(_TABLE_SUFFIX, 'desktop'), 'desktop', 'mobile') AS client,
     url,
     GET_LIGHTHOUSE_CATEGORY_SCORES(JSON_QUERY(report, '$.categories')) AS lighthouse_category
   FROM
-    `httparchive.lighthouse.2021_07_01_*`
+    `httparchive.lighthouse.202*`
 )
 
 
 SELECT
-  GET_DATE() AS date,
+  date,
   geo,
   ARRAY_TO_STRING(ARRAY_AGG(DISTINCT category IGNORE NULLS ORDER BY category), ', ') AS categories,
   app,
@@ -137,16 +142,17 @@ FROM
 JOIN
   summary_stats
 USING
-  (client, url)
+  (date, client, url)
 LEFT JOIN
   lighthouse
 USING
-  (client, url)
+  (date, client, url)
 JOIN
   crux
 USING
-  (client, url)
+  (date, client, url)
 GROUP BY
-  app,
+  date,
   geo,
+  app,
   client
