@@ -27,7 +27,7 @@ WITH unique_categories AS (
   SELECT
     ARRAY_AGG(DISTINCT LOWER(category)) AS categories
   FROM
-    `httparchive.technologies.2021_09_01_mobile`
+    `httparchive.technologies.2022_01_01_mobile`
 ), geo_summary AS (
   SELECT
     CAST(REGEXP_REPLACE(CAST(yyyymm AS STRING), r'(\d{4})(\d{2})', r'\1-\2-01') AS DATE) AS date,
@@ -45,6 +45,7 @@ UNION ALL
   SELECT
     date,
     geo,
+    rank,
     CONCAT(origin, '/') AS url,
     IF(device = 'desktop', 'desktop', 'mobile') AS client,
     
@@ -65,10 +66,12 @@ UNION ALL
     IS_NON_ZERO(fast_ttfb, avg_ttfb, slow_ttfb) AS any_ttfb,
     IS_GOOD(fast_ttfb, avg_ttfb, slow_ttfb) AS good_ttfb
   FROM
-    geo_summary
+    geo_summary,
+    UNNEST([1000, 10000, 100000, 1000000, 10000000, 100000000]) AS _rank
   WHERE
     date >= '2020-01-01' AND
-    device IN ('desktop', 'phone')
+    device IN ('desktop', 'phone') AND
+    rank <= _rank
 ), technologies AS (
   SELECT DISTINCT
     CAST(REGEXP_REPLACE(_TABLE_SUFFIX, r'(\d)_(\d{2})_(\d{2}).*', r'202\1-\2-\3') AS DATE) AS date,
@@ -81,6 +84,18 @@ UNION ALL
   WHERE
     app IS NOT NULL AND
     app != ''
+UNION ALL
+  SELECT
+    CAST(REGEXP_REPLACE(_TABLE_SUFFIX, r'(\d)_(\d{2})_(\d{2}).*', r'202\1-\2-\3') AS DATE) AS date,
+    ARRAY_TO_STRING((SELECT
+        ARRAY_AGG(DISTINCT category) AS categories
+      FROM
+        `httparchive.technologies.2022_01_01_mobile`), ', ') AS category,
+    'ALL' AS app,
+    IF(ENDS_WITH(_TABLE_SUFFIX, 'desktop'), 'desktop', 'mobile') AS client,
+    url
+  FROM
+    `httparchive.summary_pages.202*`
 ), summary_stats AS (
   SELECT
     CAST(REGEXP_REPLACE(_TABLE_SUFFIX, r'(\d)_(\d{2})_(\d{2}).*', r'202\1-\2-\3') AS DATE) AS date,
@@ -105,6 +120,7 @@ UNION ALL
 SELECT
   date,
   geo,
+  rank,
   ARRAY_TO_STRING(ARRAY_AGG(DISTINCT category IGNORE NULLS ORDER BY category), ', ') AS categories,
   app,
   client,
@@ -153,6 +169,7 @@ USING
   (date, client, url)
 GROUP BY
   date,
+  rank,
   geo,
   app,
   client
