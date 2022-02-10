@@ -45,7 +45,15 @@ UNION ALL
   SELECT
     date,
     geo,
-    _rank AS rank,
+    CASE _rank
+      WHEN 100000000 THEN 'ALL'
+      WHEN 10000000 THEN 'Top 10M'
+      WHEN 1000000 THEN 'Top 1M' 
+      WHEN 100000 THEN 'Top 100k'
+      WHEN 10000 THEN 'Top 10k'
+      WHEN 1000 THEN 'Top 1k'
+      ELSE 'ALL'
+    END AS rank,
     CONCAT(origin, '/') AS url,
     IF(device = 'desktop', 'desktop', 'mobile') AS client,
     
@@ -71,7 +79,7 @@ UNION ALL
   WHERE
     date >= '2020-01-01' AND
     device IN ('desktop', 'phone') AND
-    rank <= _rank
+    (rank <= _rank OR rank IS NULL)
 ), technologies AS (
   SELECT DISTINCT
     CAST(REGEXP_REPLACE(_TABLE_SUFFIX, r'(\d)_(\d{2})_(\d{2}).*', r'202\1-\2-\3') AS DATE) AS date,
