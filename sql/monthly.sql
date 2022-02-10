@@ -63,7 +63,7 @@ UNION ALL
 ), crux AS (
   SELECT
     geo,
-    rank,
+    _rank AS rank,
     CONCAT(origin, '/') AS url,
     IF(device = 'desktop', 'desktop', 'mobile') AS client,
     
