@@ -25,25 +25,25 @@ try {
 
 ######### BEGIN MONTHLY UPDATES
 WITH RELEASE_DATE AS (
-  SELECT CAST('2021-07-01' AS DATE)
+  SELECT CAST('2022-02-01' AS DATE)
 ), TECHNOLOGIES_RELEASE AS (
   SELECT
     _TABLE_SUFFIX,
     *
   FROM
-    `httparchive.technologies.2021_07_01_*`
+    `httparchive.technologies.2022_02_01_*`
 ), SUMMARY_PAGES_RELEASE AS (
   SELECT
     _TABLE_SUFFIX,
     *
   FROM
-    `httparchive.summary_pages.2021_07_01_*`
+    `httparchive.summary_pages.2022_02_01_*`
 ), LIGHTHOUSE_RELEASE AS (
   SELECT
     _TABLE_SUFFIX,
     *
   FROM
-    `httparchive.lighthouse.2021_07_01_*`
+    `httparchive.lighthouse.2022_02_01_*`
 ),
 ######### END MONTHLY UPDATES
 
@@ -63,15 +63,7 @@ UNION ALL
 ), crux AS (
   SELECT
     geo,
-    CASE
-      WHEN rank IS NULL THEN 'ALL'
-      WHEN _rank = 100000000 THEN 'ALL'
-      WHEN _rank = 10000000 THEN 'Top 10M'
-      WHEN _rank = 1000000 THEN 'Top 1M' 
-      WHEN _rank = 100000 THEN 'Top 100k'
-      WHEN _rank = 10000 THEN 'Top 10k'
-      WHEN _rank = 1000 THEN 'Top 1k'
-    END AS rank,
+    rank,
     CONCAT(origin, '/') AS url,
     IF(device = 'desktop', 'desktop', 'mobile') AS client,
     
@@ -97,7 +89,7 @@ UNION ALL
   WHERE
     date = (SELECT * FROM RELEASE_DATE) AND
     device IN ('desktop', 'phone') AND
-    (rank <= _rank OR (rank IS NULL AND _rank = 100000000))
+    rank <= _rank
 ), technologies AS (
   SELECT DISTINCT
     category,
@@ -114,12 +106,12 @@ UNION ALL
     ARRAY_TO_STRING((SELECT
         ARRAY_AGG(DISTINCT category) AS categories
       FROM
-        `httparchive.technologies.2022_01_01_mobile`), ', ') AS category,
+        TECHNOLOGIES_RELEASE), ', ') AS category,
     'ALL' AS app,
     IF(ENDS_WITH(_TABLE_SUFFIX, 'desktop'), 'desktop', 'mobile') AS client,
     url
   FROM
-    TECHNOLOGIES_RELEASE
+    SUMMARY_PAGES_RELEASE
 ), summary_stats AS (
   SELECT
     _TABLE_SUFFIX AS client,
