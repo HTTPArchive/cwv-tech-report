@@ -37,7 +37,7 @@ WITH unique_categories AS (
     `chrome-ux-report.materialized.country_summary`
 UNION ALL
   SELECT
-    * EXCEPT (yyyymmdd, p75_fid_origin, p75_cls_origin, p75_lcp_origin),
+    * EXCEPT (yyyymmdd, p75_fid_origin, p75_cls_origin, p75_lcp_origin, p75_responsiveness_origin),
     'ALL' AS geo
   FROM
     `chrome-ux-report.materialized.device_summary`
