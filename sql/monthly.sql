@@ -63,7 +63,14 @@ UNION ALL
 ), crux AS (
   SELECT
     geo,
-    _rank AS rank,
+    CASE _rank
+      WHEN 100000000 THEN 'ALL'
+      WHEN 10000000 THEN 'Top 10M'
+      WHEN 1000000 THEN 'Top 1M'
+      WHEN 100000 THEN 'Top 100k'
+      WHEN 10000 THEN 'Top 10k'
+      WHEN 1000 THEN 'Top 1k'
+    END AS rank,
     CONCAT(origin, '/') AS url,
     IF(device = 'desktop', 'desktop', 'mobile') AS client,
     
