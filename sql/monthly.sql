@@ -56,14 +56,21 @@ geo_summary AS (
     `chrome-ux-report.materialized.country_summary`
 UNION ALL
   SELECT
-    * EXCEPT (yyyymmdd, p75_fid_origin, p75_cls_origin, p75_lcp_origin),
+    * EXCEPT (yyyymmdd, p75_fid_origin, p75_cls_origin, p75_lcp_origin, p75_responsiveness_origin),
     'ALL' AS geo
   FROM
     `chrome-ux-report.materialized.device_summary`
 ), crux AS (
   SELECT
     geo,
-    rank,
+    CASE _rank
+      WHEN 100000000 THEN 'ALL'
+      WHEN 10000000 THEN 'Top 10M'
+      WHEN 1000000 THEN 'Top 1M'
+      WHEN 100000 THEN 'Top 100k'
+      WHEN 10000 THEN 'Top 10k'
+      WHEN 1000 THEN 'Top 1k'
+    END AS rank,
     CONCAT(origin, '/') AS url,
     IF(device = 'desktop', 'desktop', 'mobile') AS client,
     
@@ -138,21 +145,21 @@ SELECT
   ARRAY_TO_STRING(ARRAY_AGG(DISTINCT category IGNORE NULLS ORDER BY category), ', ') AS categories,
   app,
   client,
-  COUNT(DISTINCT url) AS origins,
+  COUNT(0) AS origins,
   
   # CrUX data
-  COUNT(DISTINCT IF(good_fid, url, NULL)) AS origins_with_good_fid,
-  COUNT(DISTINCT IF(good_cls, url, NULL)) AS origins_with_good_cls,
-  COUNT(DISTINCT IF(good_lcp, url, NULL)) AS origins_with_good_lcp,
-  COUNT(DISTINCT IF(good_fcp, url, NULL)) AS origins_with_good_fcp,
-  COUNT(DISTINCT IF(good_ttfb, url, NULL)) AS origins_with_good_ttfb,
-  COUNT(DISTINCT IF(any_fid, url, NULL)) AS origins_with_any_fid,
-  COUNT(DISTINCT IF(any_cls, url, NULL)) AS origins_with_any_cls,
-  COUNT(DISTINCT IF(any_lcp, url, NULL)) AS origins_with_any_lcp,
-  COUNT(DISTINCT IF(any_fcp, url, NULL)) AS origins_with_any_fcp,
-  COUNT(DISTINCT IF(any_ttfb, url, NULL)) AS origins_with_any_ttfb,
-  COUNT(DISTINCT IF(good_cwv, url, NULL)) AS origins_with_good_cwv,
-  COUNT(DISTINCT IF(any_lcp AND any_cls, url, NULL)) AS origins_eligible_for_cwv,
+  COUNTIF(good_fid) AS origins_with_good_fid,
+  COUNTIF(good_cls) AS origins_with_good_cls,
+  COUNTIF(good_lcp) AS origins_with_good_lcp,
+  COUNTIF(good_fcp) AS origins_with_good_fcp,
+  COUNTIF(good_ttfb) AS origins_with_good_ttfb,
+  COUNTIF(any_fid) AS origins_with_any_fid,
+  COUNTIF(any_cls) AS origins_with_any_cls,
+  COUNTIF(any_lcp) AS origins_with_any_lcp,
+  COUNTIF(any_fcp) AS origins_with_any_fcp,
+  COUNTIF(any_ttfb) AS origins_with_any_ttfb,
+  COUNTIF(good_cwv) AS origins_with_good_cwv,
+  COUNTIF(any_lcp AND any_cls) AS origins_eligible_for_cwv,
   SAFE_DIVIDE(COUNTIF(good_cwv), COUNTIF(any_lcp AND any_cls)) AS pct_eligible_origins_with_good_cwv,
   
   # Lighthouse data
