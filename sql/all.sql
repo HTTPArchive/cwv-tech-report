@@ -71,7 +71,7 @@ UNION ALL
   WHERE
     date >= '2020-01-01' AND
     device IN ('desktop', 'phone') AND
-    rank <= _rank
+    (rank <= _rank OR (rank IS NULL AND _rank = 100000000))
 ), technologies AS (
   SELECT DISTINCT
     CAST(REGEXP_REPLACE(_TABLE_SUFFIX, r'(\d)_(\d{2})_(\d{2}).*', r'202\1-\2-\3') AS DATE) AS date,
