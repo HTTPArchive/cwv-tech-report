@@ -1,5 +1,5 @@
 CREATE TEMP FUNCTION IS_GOOD(good FLOAT64, needs_improvement FLOAT64, poor FLOAT64) RETURNS BOOL AS (
-  good / (good + needs_improvement + poor) >= 0.75
+  SAFE_DIVIDE(good, good + needs_improvement + poor) >= 0.75
 );
 
 CREATE TEMP FUNCTION IS_NON_ZERO(good FLOAT64, needs_improvement FLOAT64, poor FLOAT64) RETURNS BOOL AS (
@@ -25,25 +25,25 @@ try {
 
 ######### BEGIN MONTHLY UPDATES
 WITH RELEASE_DATE AS (
-  SELECT CAST('2022-02-01' AS DATE)
+  SELECT CAST('2022-04-01' AS DATE)
 ), TECHNOLOGIES_RELEASE AS (
   SELECT
     _TABLE_SUFFIX,
     *
   FROM
-    `httparchive.technologies.2022_02_01_*`
+    `httparchive.technologies.2022_04_01_*`
 ), SUMMARY_PAGES_RELEASE AS (
   SELECT
     _TABLE_SUFFIX,
     *
   FROM
-    `httparchive.summary_pages.2022_02_01_*`
+    `httparchive.summary_pages.2022_04_01_*`
 ), LIGHTHOUSE_RELEASE AS (
   SELECT
     _TABLE_SUFFIX,
     *
   FROM
-    `httparchive.lighthouse.2022_02_01_*`
+    `httparchive.lighthouse.2022_04_01_*`
 ),
 ######### END MONTHLY UPDATES
 
@@ -56,7 +56,7 @@ geo_summary AS (
     `chrome-ux-report.materialized.country_summary`
 UNION ALL
   SELECT
-    * EXCEPT (yyyymmdd, p75_fid_origin, p75_cls_origin, p75_lcp_origin, p75_responsiveness_origin),
+    * EXCEPT (yyyymmdd, p75_fid_origin, p75_cls_origin, p75_lcp_origin, p75_inp_origin),
     'ALL' AS geo
   FROM
     `chrome-ux-report.materialized.device_summary`
@@ -89,7 +89,9 @@ UNION ALL
     IS_NON_ZERO(fast_fcp, avg_fcp, slow_fcp) AS any_fcp,
     IS_GOOD(fast_fcp, avg_fcp, slow_fcp) AS good_fcp,
     IS_NON_ZERO(fast_ttfb, avg_ttfb, slow_ttfb) AS any_ttfb,
-    IS_GOOD(fast_ttfb, avg_ttfb, slow_ttfb) AS good_ttfb
+    IS_GOOD(fast_ttfb, avg_ttfb, slow_ttfb) AS good_ttfb,
+    IS_NON_ZERO(fast_inp, avg_inp, slow_inp) AS any_inp,
+    IS_GOOD(fast_inp, avg_inp, slow_inp) AS good_inp
   FROM
     geo_summary,
     UNNEST([1000, 10000, 100000, 1000000, 10000000, 100000000]) AS _rank
@@ -153,11 +155,13 @@ SELECT
   COUNTIF(good_lcp) AS origins_with_good_lcp,
   COUNTIF(good_fcp) AS origins_with_good_fcp,
   COUNTIF(good_ttfb) AS origins_with_good_ttfb,
+  COUNTIF(good_inp) AS origins_with_good_inp,
   COUNTIF(any_fid) AS origins_with_any_fid,
   COUNTIF(any_cls) AS origins_with_any_cls,
   COUNTIF(any_lcp) AS origins_with_any_lcp,
   COUNTIF(any_fcp) AS origins_with_any_fcp,
   COUNTIF(any_ttfb) AS origins_with_any_ttfb,
+  COUNTIF(any_inp) AS origins_with_any_inp,
   COUNTIF(good_cwv) AS origins_with_good_cwv,
   COUNTIF(any_lcp AND any_cls) AS origins_eligible_for_cwv,
   SAFE_DIVIDE(COUNTIF(good_cwv), COUNTIF(any_lcp AND any_cls)) AS pct_eligible_origins_with_good_cwv,
