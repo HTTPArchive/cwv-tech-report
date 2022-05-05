@@ -23,9 +23,10 @@ try {
 }
 ''';
 
-WITH unique_categories AS (
+WITH latest_technologies AS (
   SELECT
-    ARRAY_AGG(DISTINCT LOWER(category)) AS categories
+    category,
+    app
   FROM
     `httparchive.technologies.2022_04_01_mobile`
 ), geo_summary AS (
@@ -84,7 +85,6 @@ UNION ALL
 ), technologies AS (
   SELECT DISTINCT
     CAST(REGEXP_REPLACE(_TABLE_SUFFIX, r'(\d)_(\d{2})_(\d{2}).*', r'202\1-\2-\3') AS DATE) AS date,
-    IF(category != '' AND LOWER(category) IN UNNEST((SELECT categories FROM unique_categories)), category, NULL) AS category,
     app,
     IF(ENDS_WITH(_TABLE_SUFFIX, 'desktop'), 'desktop', 'mobile') AS client,
     url
@@ -96,15 +96,25 @@ UNION ALL
 UNION ALL
   SELECT
     CAST(REGEXP_REPLACE(_TABLE_SUFFIX, r'(\d)_(\d{2})_(\d{2}).*', r'202\1-\2-\3') AS DATE) AS date,
-    ARRAY_TO_STRING((SELECT
-        ARRAY_AGG(DISTINCT category) AS categories
-      FROM
-        `httparchive.technologies.2022_01_01_mobile`), ', ') AS category,
     'ALL' AS app,
     IF(ENDS_WITH(_TABLE_SUFFIX, 'desktop'), 'desktop', 'mobile') AS client,
     url
   FROM
     `httparchive.summary_pages.202*`
+), categories AS (
+  SELECT
+    app,
+    ARRAY_TO_STRING(ARRAY_AGG(DISTINCT category IGNORE NULLS ORDER BY category), ', ') AS category
+  FROM
+    latest_technologies
+  GROUP BY
+    app
+UNION ALL
+  SELECT
+    ARRAY_TO_STRING(ARRAY_AGG(DISTINCT category IGNORE NULLS ORDER BY category), ', ') AS category,
+    'ALL' AS app
+  FROM
+    latest_technologies
 ), summary_stats AS (
   SELECT
     CAST(REGEXP_REPLACE(_TABLE_SUFFIX, r'(\d)_(\d{2})_(\d{2}).*', r'202\1-\2-\3') AS DATE) AS date,
@@ -166,6 +176,10 @@ SELECT
   
 FROM
   technologies
+JOIN
+  categories
+USING
+  (app)
 JOIN
   summary_stats
 USING
