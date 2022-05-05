@@ -140,7 +140,7 @@ SELECT
   date,
   geo,
   rank,
-  ARRAY_TO_STRING(ARRAY_AGG(DISTINCT category IGNORE NULLS ORDER BY category), ', ') AS categories,
+  ANY_VALUE(category) AS category,
   app,
   client,
   COUNT(0) AS origins,
