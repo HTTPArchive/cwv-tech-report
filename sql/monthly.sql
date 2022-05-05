@@ -101,7 +101,6 @@ UNION ALL
     rank <= _rank
 ), technologies AS (
   SELECT DISTINCT
-    category,
     app,
     _TABLE_SUFFIX AS client,
     url
@@ -112,15 +111,25 @@ UNION ALL
     app != ''
 UNION ALL
   SELECT
-    ARRAY_TO_STRING((SELECT
-        ARRAY_AGG(DISTINCT category) AS categories
-      FROM
-        TECHNOLOGIES_RELEASE), ', ') AS category,
     'ALL' AS app,
     IF(ENDS_WITH(_TABLE_SUFFIX, 'desktop'), 'desktop', 'mobile') AS client,
     url
   FROM
     SUMMARY_PAGES_RELEASE
+), categories AS (
+  SELECT
+    app,
+    ARRAY_TO_STRING(ARRAY_AGG(DISTINCT category IGNORE NULLS ORDER BY category), ', ') AS category
+  FROM
+    TECHNOLOGIES_RELEASE
+  GROUP BY
+    app
+UNION ALL
+  SELECT
+    ARRAY_TO_STRING(ARRAY_AGG(DISTINCT category IGNORE NULLS ORDER BY category), ', ') AS category,
+    'ALL' AS app
+  FROM
+    TECHNOLOGIES_RELEASE
 ), summary_stats AS (
   SELECT
     _TABLE_SUFFIX AS client,
@@ -144,7 +153,7 @@ SELECT
   (SELECT * FROM RELEASE_DATE) AS date,
   geo,
   rank,
-  ARRAY_TO_STRING(ARRAY_AGG(DISTINCT category IGNORE NULLS ORDER BY category), ', ') AS categories,
+  ANY_VALUE(category) AS category,
   app,
   client,
   COUNT(0) AS origins,
@@ -180,6 +189,10 @@ SELECT
   
 FROM
   technologies
+JOIN
+  categories
+USING
+  (app)
 JOIN
   summary_stats
 USING
