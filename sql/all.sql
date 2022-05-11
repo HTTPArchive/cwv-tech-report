@@ -111,8 +111,8 @@ UNION ALL
     app
 UNION ALL
   SELECT
-    ARRAY_TO_STRING(ARRAY_AGG(DISTINCT category IGNORE NULLS ORDER BY category), ', ') AS category,
-    'ALL' AS app
+    'ALL' AS app,
+    ARRAY_TO_STRING(ARRAY_AGG(DISTINCT category IGNORE NULLS ORDER BY category), ', ') AS category
   FROM
     latest_technologies
 ), summary_stats AS (
