@@ -153,6 +153,42 @@ UNION ALL
     GET_LIGHTHOUSE_CATEGORY_SCORES(JSON_QUERY(report, '$.categories')) AS lighthouse_category
   FROM
     LIGHTHOUSE_RELEASE
+), lab_data AS (
+  SELECT
+    client,
+    root_page_url,
+    app,
+    ANY_VALUE(category) AS category,
+    AVG(bytesTotal) AS bytesTotal,
+    AVG(bytesJS) AS bytesJS,
+    AVG(bytesImg) AS bytesImg,
+    AVG(lighthouse_category.accessibility) AS accessibility,
+    AVG(lighthouse_category.best_practices) AS best_practices,
+    AVG(lighthouse_category.performance) AS performance,
+    AVG(lighthouse_category.pwa) AS pwa,
+    AVG(lighthouse_category.seo) AS seo
+  FROM
+    pages
+  JOIN
+    technologies
+  USING
+    (url)
+  JOIN
+    categories
+  USING
+    (app)
+  JOIN
+    summary_stats
+  USING
+    (client, url)
+  LEFT JOIN
+    lighthouse
+  USING
+    (client, url)
+  GROUP BY
+    client,
+    root_page_url,
+    app
 )
 
 
@@ -163,7 +199,7 @@ SELECT
   ANY_VALUE(category) AS category,
   app,
   client,
-  COUNT(DISTINCT root_page_url) AS origins,
+  COUNT(0) AS origins,
   
   # CrUX data
   COUNTIF(good_fid) AS origins_with_good_fid,
@@ -195,23 +231,7 @@ SELECT
   APPROX_QUANTILES(bytesImg, 1000)[OFFSET(500)] AS median_bytes_image
   
 FROM
-  pages
-JOIN
-  technologies
-USING
-  (url)
-JOIN
-  categories
-USING
-  (app)
-JOIN
-  summary_stats
-USING
-  (client, url)
-LEFT JOIN
-  lighthouse
-USING
-  (client, url)
+  lab_data
 JOIN
   crux
 USING
