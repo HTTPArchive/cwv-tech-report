@@ -25,25 +25,32 @@ try {
 
 ######### BEGIN MONTHLY UPDATES
 WITH RELEASE_DATE AS (
-  SELECT CAST('2022-04-01' AS DATE)
+  SELECT CAST('2022-05-01' AS DATE)
 ), TECHNOLOGIES_RELEASE AS (
   SELECT
     _TABLE_SUFFIX,
     *
   FROM
-    `httparchive.technologies.2022_04_01_*`
+    `httparchive.technologies.2022_05_12_*`
 ), SUMMARY_PAGES_RELEASE AS (
   SELECT
     _TABLE_SUFFIX,
     *
   FROM
-    `httparchive.summary_pages.2022_04_01_*`
+    `httparchive.summary_pages.2022_05_12_*`
 ), LIGHTHOUSE_RELEASE AS (
   SELECT
     _TABLE_SUFFIX,
     *
   FROM
-    `httparchive.lighthouse.2022_04_01_*`
+    `httparchive.lighthouse.2022_05_12_*`
+), pages AS (
+  SELECT
+    _TABLE_SUFFIX,
+    url,
+    JSON_VALUE(payload, '$._metadata.root_page_url') AS root_page
+  FROM
+    `httparchive.pages.2022_05_12_*`
 ),
 ######### END MONTHLY UPDATES
 
@@ -188,7 +195,11 @@ SELECT
   APPROX_QUANTILES(bytesImg, 1000)[OFFSET(500)] AS median_bytes_image
   
 FROM
+  pages
+JOIN
   technologies
+USING
+  (url)
 JOIN
   categories
 USING
@@ -209,4 +220,5 @@ GROUP BY
   app,
   geo,
   rank,
-  client
+  client,
+  root_page
