@@ -31,26 +31,19 @@ WITH RELEASE_DATE AS (
     _TABLE_SUFFIX,
     *
   FROM
-    `httparchive.technologies.2022_05_12_*`
+    `httparchive.technologies.2022_05_01_*`
 ), SUMMARY_PAGES_RELEASE AS (
   SELECT
     _TABLE_SUFFIX,
     *
   FROM
-    `httparchive.summary_pages.2022_05_12_*`
+    `httparchive.summary_pages.2022_05_01_*`
 ), LIGHTHOUSE_RELEASE AS (
   SELECT
     _TABLE_SUFFIX,
     *
   FROM
-    `httparchive.lighthouse.2022_05_12_*`
-), pages AS (
-  SELECT
-    _TABLE_SUFFIX,
-    url,
-    COALESCE(JSON_VALUE(payload, '$._metadata.root_page_url'), url) AS root_page_url
-  FROM
-    `httparchive.pages.2022_05_12_*`
+    `httparchive.lighthouse.2022_05_01_*`
 ),
 ######### END MONTHLY UPDATES
 
@@ -78,7 +71,7 @@ UNION ALL
       WHEN 10000 THEN 'Top 10k'
       WHEN 1000 THEN 'Top 1k'
     END AS rank,
-    CONCAT(origin, '/') AS root_page_url,
+    CONCAT(origin, '/') AS url,
     IF(device = 'desktop', 'desktop', 'mobile') AS client,
     
     # CWV
@@ -163,7 +156,7 @@ SELECT
   ANY_VALUE(category) AS category,
   app,
   client,
-  COUNT(DISTINCT root_page_url) AS origins,
+  COUNT(0) AS origins,
   
   # CrUX data
   COUNTIF(good_fid) AS origins_with_good_fid,
@@ -195,11 +188,7 @@ SELECT
   APPROX_QUANTILES(bytesImg, 1000)[OFFSET(500)] AS median_bytes_image
   
 FROM
-  pages
-JOIN
   technologies
-USING
-  (url)
 JOIN
   categories
 USING
@@ -215,7 +204,7 @@ USING
 JOIN
   crux
 USING
-  (client, root_page_url)
+  (client, url)
 GROUP BY
   app,
   geo,
