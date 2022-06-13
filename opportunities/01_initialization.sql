@@ -5,7 +5,7 @@ CREATE TEMP FUNCTION IS_INTERESTING(app STRING) RETURNS BOOL AS (
     # JavaScript frameworks and libraries
     'React', 'Next.js', 'Angular', 'Vue.js', 'Nuxt.js', 'Svelte', 'SvelteKit', 'Preact',
     # CMSs 
-    'WordPress', 'Drupal', 'Joomla', 'Wix', 'Squarespace', 'Duda', 'Shopify')
+    'WordPress', 'Drupal', 'Joomla', 'Wix', 'Squarespace', 'Duda', 'Shopify', 'Elementor')
 );
 
 # This content is generated from lighthouse_cwv.js.
@@ -80,7 +80,7 @@ WITH technologies AS (
     url,
     app AS technology
   FROM
-    `httparchive.technologies.2022_02_01_mobile`
+    `httparchive.technologies.2022_05_01_mobile`
   WHERE
     IS_INTERESTING(app)
 ), audits AS (
@@ -110,7 +110,7 @@ WITH technologies AS (
       url,
       audit.*
     FROM
-      `httparchive.lighthouse.2022_02_01_mobile`,
+      `httparchive.lighthouse.2022_05_01_mobile`,
       UNNEST(GET_AUDITS(report)) AS audit) AS after
   USING
     (url, metric, audit)
@@ -142,7 +142,7 @@ JOIN (
     metric,
     value
   FROM
-    `httparchive.pages.2022_02_01_mobile`,
+    `httparchive.pages.2022_05_01_mobile`,
     UNNEST(GET_CWV(payload))) AS after
 USING
   (url, env, metric)
