@@ -1,4 +1,4 @@
-# Note: this query should overwrite the contents of the `httparchive.scratchspace.lh_cwv` table.
+# Note: you'll need to manually configure this query in the BigQuery UI to overwrite the contents of the `httparchive.scratchspace.lh_cwv` table.
 
 CREATE TEMP FUNCTION IS_INTERESTING(app STRING) RETURNS BOOL AS (
   app IN (
