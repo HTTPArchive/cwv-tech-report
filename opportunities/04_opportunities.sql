@@ -3,7 +3,7 @@ CREATE TEMP FUNCTION IS_INTERESTING(app STRING) RETURNS BOOL AS (
     # JavaScript frameworks and libraries
     'React', 'Next.js', 'Angular', 'Vue.js', 'Nuxt.js', 'Svelte', 'SvelteKit', 'Preact',
     # CMSs 
-    'WordPress', 'Drupal', 'Joomla', 'Wix', 'Squarespace', 'Duda', 'Shopify')
+    'WordPress', 'Drupal', 'Joomla', 'Wix', 'Squarespace', 'Duda', 'Shopify', 'Elementor')
 );
 
 CREATE TEMP FUNCTION GET_AUDITS(lhr STRING) RETURNS ARRAY<STRUCT<metric STRING, audit STRING, passing BOOL>> AS (
@@ -49,7 +49,7 @@ WITH audits_with_impact AS (
     app AS technology,
     COUNT(DISTINCT url) OVER (PARTITION BY app) AS total
   FROM
-    `httparchive.technologies.2022_02_01_mobile`
+    `httparchive.technologies.2022_05_01_mobile`
   WHERE
     IS_INTERESTING(app)
 ), ranks AS (
@@ -63,13 +63,13 @@ WITH audits_with_impact AS (
       ELSE 'tail'
     END AS rank
   FROM
-    `httparchive.summary_pages.2022_02_01_mobile`
+    `httparchive.summary_pages.2022_05_01_mobile`
 ), failing_audits AS (
   SELECT
     audit.audit,
     url
   FROM
-    `httparchive.lighthouse.2022_02_01_mobile`,
+    `httparchive.lighthouse.2022_05_01_mobile`,
     UNNEST(GET_AUDITS(report)) AS audit
   WHERE
     NOT passing
