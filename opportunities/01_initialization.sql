@@ -8,6 +8,7 @@ CREATE TEMP FUNCTION IS_INTERESTING(app STRING) RETURNS BOOL AS (
     'WordPress', 'Drupal', 'Joomla', 'Wix', 'Squarespace', 'Duda', 'Shopify')
 );
 
+# This content is generated from lighthouse_cwv.js.
 CREATE TEMP FUNCTION GET_AUDITS(lhr STRING) RETURNS ARRAY<STRUCT<metric STRING, audit STRING, passing BOOL>> AS (
 [
 STRUCT('FID' AS metric, 'third-party-summary' AS audit, SAFE_CAST(JSON_VALUE(lhr, '$.audits."third-party-summary".score') AS FLOAT64) >= 0.9 AS passing),
