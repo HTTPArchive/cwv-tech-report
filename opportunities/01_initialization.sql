@@ -1,3 +1,5 @@
+# Note: this query should overwrite the contents of the `httparchive.scratchspace.lh_cwv` table.
+
 CREATE TEMP FUNCTION IS_INTERESTING(app STRING) RETURNS BOOL AS (
   app IN (
     # JavaScript frameworks and libraries
