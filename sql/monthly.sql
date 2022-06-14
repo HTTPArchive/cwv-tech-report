@@ -219,11 +219,11 @@ SELECT
   SAFE_DIVIDE(COUNTIF(good_cwv), COUNTIF(any_lcp AND any_cls)) AS pct_eligible_origins_with_good_cwv,
   
   # Lighthouse data
-  APPROX_QUANTILES(lighthouse_category.accessibility, 1000)[OFFSET(500)] AS median_lighthouse_score_accessibility,
-  APPROX_QUANTILES(lighthouse_category.best_practices, 1000)[OFFSET(500)] AS median_lighthouse_score_best_practices,
-  APPROX_QUANTILES(lighthouse_category.performance, 1000)[OFFSET(500)] AS median_lighthouse_score_performance,
-  APPROX_QUANTILES(lighthouse_category.pwa, 1000)[OFFSET(500)] AS median_lighthouse_score_pwa,
-  APPROX_QUANTILES(lighthouse_category.seo, 1000)[OFFSET(500)] AS median_lighthouse_score_seo,
+  APPROX_QUANTILES(accessibility, 1000)[OFFSET(500)] AS median_lighthouse_score_accessibility,
+  APPROX_QUANTILES(best_practices, 1000)[OFFSET(500)] AS median_lighthouse_score_best_practices,
+  APPROX_QUANTILES(performance, 1000)[OFFSET(500)] AS median_lighthouse_score_performance,
+  APPROX_QUANTILES(pwa, 1000)[OFFSET(500)] AS median_lighthouse_score_pwa,
+  APPROX_QUANTILES(seo, 1000)[OFFSET(500)] AS median_lighthouse_score_seo,
   
   # Page weight stats
   APPROX_QUANTILES(bytesTotal, 1000)[OFFSET(500)] AS median_bytes_total,
@@ -241,4 +241,3 @@ GROUP BY
   geo,
   rank,
   client
-  
