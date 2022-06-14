@@ -13,7 +13,7 @@ try {
   const $ = JSON.parse(categories);
   return {
     accessibility: $.accessibility.score,
-    'best-practices': $['best-practices'].score,
+    best_practices: $['best-practices'].score,
     performance: $.performance.score,
     pwa: $.pwa.score,
     seo: $.seo.score
