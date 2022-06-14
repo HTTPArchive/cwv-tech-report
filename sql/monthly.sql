@@ -159,14 +159,14 @@ UNION ALL
     root_page_url,
     app,
     ANY_VALUE(category) AS category,
-    AVG(bytesTotal) AS bytesTotal,
-    AVG(bytesJS) AS bytesJS,
-    AVG(bytesImg) AS bytesImg,
-    AVG(lighthouse_category.accessibility) AS accessibility,
-    AVG(lighthouse_category.best_practices) AS best_practices,
-    AVG(lighthouse_category.performance) AS performance,
-    AVG(lighthouse_category.pwa) AS pwa,
-    AVG(lighthouse_category.seo) AS seo
+    CAST(AVG(bytesTotal) AS INT64) AS bytesTotal,
+    CAST(AVG(bytesJS) AS INT64) AS bytesJS,
+    CAST(AVG(bytesImg) AS INT64) AS bytesImg,
+    CAST(AVG(lighthouse_category.accessibility) AS NUMERIC) AS accessibility,
+    CAST(AVG(lighthouse_category.best_practices) AS NUMERIC) AS best_practices,
+    CAST(AVG(lighthouse_category.performance) AS NUMERIC) AS performance,
+    CAST(AVG(lighthouse_category.pwa) AS NUMERIC) AS pwa,
+    CAST(AVG(lighthouse_category.seo) AS NUMERIC) AS seo
   FROM
     pages
   JOIN
