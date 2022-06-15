@@ -13,7 +13,7 @@ try {
   const $ = JSON.parse(categories);
   return {
     accessibility: $.accessibility.score,
-    'best-practices': $['best-practices'].score,
+    best_practices: $['best-practices'].score,
     performance: $.performance.score,
     pwa: $.pwa.score,
     seo: $.seo.score
@@ -25,25 +25,32 @@ try {
 
 ######### BEGIN MONTHLY UPDATES
 WITH RELEASE_DATE AS (
-  SELECT CAST('2022-04-01' AS DATE)
+  SELECT CAST('2022-05-01' AS DATE)
 ), TECHNOLOGIES_RELEASE AS (
   SELECT
     _TABLE_SUFFIX,
     *
   FROM
-    `httparchive.technologies.2022_04_01_*`
+    `httparchive.technologies.2022_05_12_*`
 ), SUMMARY_PAGES_RELEASE AS (
   SELECT
     _TABLE_SUFFIX,
     *
   FROM
-    `httparchive.summary_pages.2022_04_01_*`
+    `httparchive.summary_pages.2022_05_12_*`
 ), LIGHTHOUSE_RELEASE AS (
   SELECT
     _TABLE_SUFFIX,
     *
   FROM
-    `httparchive.lighthouse.2022_04_01_*`
+    `httparchive.lighthouse.2022_05_12_*`
+), pages AS (
+  SELECT
+    _TABLE_SUFFIX,
+    url,
+    COALESCE(JSON_VALUE(payload, '$._metadata.root_page_url'), url) AS root_page_url
+  FROM
+    `httparchive.pages.2022_05_12_*`
 ),
 ######### END MONTHLY UPDATES
 
@@ -71,7 +78,7 @@ UNION ALL
       WHEN 10000 THEN 'Top 10k'
       WHEN 1000 THEN 'Top 1k'
     END AS rank,
-    CONCAT(origin, '/') AS url,
+    CONCAT(origin, '/') AS root_page_url,
     IF(device = 'desktop', 'desktop', 'mobile') AS client,
     
     # CWV
@@ -146,6 +153,42 @@ UNION ALL
     GET_LIGHTHOUSE_CATEGORY_SCORES(JSON_QUERY(report, '$.categories')) AS lighthouse_category
   FROM
     LIGHTHOUSE_RELEASE
+), lab_data AS (
+  SELECT
+    client,
+    root_page_url,
+    app,
+    ANY_VALUE(category) AS category,
+    CAST(AVG(bytesTotal) AS INT64) AS bytesTotal,
+    CAST(AVG(bytesJS) AS INT64) AS bytesJS,
+    CAST(AVG(bytesImg) AS INT64) AS bytesImg,
+    CAST(AVG(lighthouse_category.accessibility) AS NUMERIC) AS accessibility,
+    CAST(AVG(lighthouse_category.best_practices) AS NUMERIC) AS best_practices,
+    CAST(AVG(lighthouse_category.performance) AS NUMERIC) AS performance,
+    CAST(AVG(lighthouse_category.pwa) AS NUMERIC) AS pwa,
+    CAST(AVG(lighthouse_category.seo) AS NUMERIC) AS seo
+  FROM
+    pages
+  JOIN
+    technologies
+  USING
+    (url)
+  JOIN
+    categories
+  USING
+    (app)
+  JOIN
+    summary_stats
+  USING
+    (client, url)
+  LEFT JOIN
+    lighthouse
+  USING
+    (client, url)
+  GROUP BY
+    client,
+    root_page_url,
+    app
 )
 
 
@@ -176,11 +219,11 @@ SELECT
   SAFE_DIVIDE(COUNTIF(good_cwv), COUNTIF(any_lcp AND any_cls)) AS pct_eligible_origins_with_good_cwv,
   
   # Lighthouse data
-  APPROX_QUANTILES(lighthouse_category.accessibility, 1000)[OFFSET(500)] AS median_lighthouse_score_accessibility,
-  APPROX_QUANTILES(lighthouse_category.best_practices, 1000)[OFFSET(500)] AS median_lighthouse_score_best_practices,
-  APPROX_QUANTILES(lighthouse_category.performance, 1000)[OFFSET(500)] AS median_lighthouse_score_performance,
-  APPROX_QUANTILES(lighthouse_category.pwa, 1000)[OFFSET(500)] AS median_lighthouse_score_pwa,
-  APPROX_QUANTILES(lighthouse_category.seo, 1000)[OFFSET(500)] AS median_lighthouse_score_seo,
+  APPROX_QUANTILES(accessibility, 1000)[OFFSET(500)] AS median_lighthouse_score_accessibility,
+  APPROX_QUANTILES(best_practices, 1000)[OFFSET(500)] AS median_lighthouse_score_best_practices,
+  APPROX_QUANTILES(performance, 1000)[OFFSET(500)] AS median_lighthouse_score_performance,
+  APPROX_QUANTILES(pwa, 1000)[OFFSET(500)] AS median_lighthouse_score_pwa,
+  APPROX_QUANTILES(seo, 1000)[OFFSET(500)] AS median_lighthouse_score_seo,
   
   # Page weight stats
   APPROX_QUANTILES(bytesTotal, 1000)[OFFSET(500)] AS median_bytes_total,
@@ -188,23 +231,11 @@ SELECT
   APPROX_QUANTILES(bytesImg, 1000)[OFFSET(500)] AS median_bytes_image
   
 FROM
-  technologies
-JOIN
-  categories
-USING
-  (app)
-JOIN
-  summary_stats
-USING
-  (client, url)
-LEFT JOIN
-  lighthouse
-USING
-  (client, url)
+  lab_data
 JOIN
   crux
 USING
-  (client, url)
+  (client, root_page_url)
 GROUP BY
   app,
   geo,
