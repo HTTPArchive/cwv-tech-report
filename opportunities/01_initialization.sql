@@ -1,7 +1,6 @@
 CREATE OR REPLACE TABLE `httparchive.core_web_vitals.lighthouse` AS
-SELECT
-  *
-FROM (
+
+WITH technologies AS (
   SELECT DISTINCT
     url,
     app AS technology
@@ -12,8 +11,8 @@ FROM (
     url,
     'ALL' AS technology
   FROM
-    `httparchive.summary_pages.2022_06_01_mobile`)
-JOIN (
+    `httparchive.summary_pages.2022_06_01_mobile`
+), audits AS (
   SELECT
     url,
     metric,
@@ -40,37 +39,47 @@ JOIN (
   WHERE
     before.passing != after.passing AND
     before.passing IS NOT NULL AND
-    after.passing IS NOT NULL)
-USING
-  (url)
+    after.passing IS NOT NULL
+), cwv AS (
+SELECT
+  url,
+  env,
+  metric,
+  before.value AS before,
+  after.value AS after,
+  httparchive.core_web_vitals.CALC_PCT_DIFF(before.value, after.value) AS pct_diff
+FROM (
+  SELECT
+    url,
+    env,
+    metric,
+    value
+  FROM
+    `httparchive.pages.2021_06_01_mobile`,
+    UNNEST(httparchive.core_web_vitals.GET_CWV(payload))) AS before
 JOIN (
   SELECT
     url,
     env,
     metric,
-    before.value AS before,
-    after.value AS after,
-    httparchive.core_web_vitals.CALC_PCT_DIFF(before.value, after.value) AS pct_diff
-  FROM (
-    SELECT
-      url,
-      env,
-      metric,
-      value
-    FROM
-      `httparchive.pages.2021_06_01_mobile`,
-      UNNEST(httparchive.core_web_vitals.GET_CWV(payload))) AS before
-  JOIN (
-    SELECT
-      url,
-      env,
-      metric,
-      value
-    FROM
-      `httparchive.pages.2022_06_01_mobile`,
-      UNNEST(httparchive.core_web_vitals.GET_CWV(payload))) AS after
-  USING
-    (url, env, metric))
+    value
+  FROM
+    `httparchive.pages.2022_06_01_mobile`,
+    UNNEST(httparchive.core_web_vitals.GET_CWV(payload))) AS after
+USING
+  (url, env, metric)
+)
+
+SELECT
+  *
+FROM
+  technologies
+JOIN
+  audits
+USING
+  (url)
+JOIN
+  cwv
 USING
   (url, metric)
 WHERE
