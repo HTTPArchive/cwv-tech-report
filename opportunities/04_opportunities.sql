@@ -1,4 +1,4 @@
-CREATE OR REPLACE TABLE httparchive.core_web_vitals.opportunities AS
+CREATE OR REPLACE TABLE httparchive.core_web_vitals.lighthouse_opportunities AS
 
 WITH audits_with_impact AS (
   SELECT DISTINCT
