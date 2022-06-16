@@ -1,4 +1,56 @@
-# This content is generated from lighthouse_cwv.js.
+# Get CrUX metrics.
+CREATE OR REPLACE FUNCTION httparchive.core_web_vitals.GET_CRUX_LCP(har STRING) RETURNS NUMERIC AS (
+  SAFE_CAST(JSON_VALUE(har, '$._CrUX.metrics.largest_contentful_paint.percentiles.p75') AS NUMERIC)
+);
+CREATE OR REPLACE FUNCTION httparchive.core_web_vitals.GET_CRUX_CLS(har STRING) RETURNS NUMERIC AS (
+  SAFE_CAST(JSON_VALUE(har, '$._CrUX.metrics.cumulative_layout_shift.percentiles.p75') AS NUMERIC)
+);
+CREATE OR REPLACE FUNCTION httparchive.core_web_vitals.GET_CRUX_FID(har STRING) RETURNS NUMERIC AS (
+  SAFE_CAST(JSON_VALUE(har, '$._CrUX.metrics.first_input_delay.percentiles.p75') AS NUMERIC)
+);
+CREATE OR REPLACE FUNCTION httparchive.core_web_vitals.GET_CRUX_INP(har STRING) RETURNS NUMERIC AS (
+  SAFE_CAST(JSON_VALUE(har, '$._CrUX.metrics.experimental_interaction_to_next_paint.percentiles.p75') AS NUMERIC)
+);
+CREATE OR REPLACE FUNCTION httparchive.core_web_vitals.GET_CRUX_TTFB(har STRING) RETURNS NUMERIC AS (
+  SAFE_CAST(JSON_VALUE(har, '$._CrUX.metrics.experimental_time_to_first_byte.percentiles.p75') AS NUMERIC)
+);
+
+# Get lab metrics.
+CREATE OR REPLACE FUNCTION httparchive.core_web_vitals.GET_LAB_LCP(har STRING) RETURNS NUMERIC AS (
+  CAST(JSON_VALUE(har, '$."_chromeUserTiming.LargestContentfulPaint"') AS NUMERIC)
+);
+CREATE OR REPLACE FUNCTION httparchive.core_web_vitals.GET_LAB_CLS(har STRING) RETURNS NUMERIC AS (
+  CAST(JSON_VALUE(har, '$."_chromeUserTiming.CumulativeLayoutShift"') AS NUMERIC)
+);
+CREATE OR REPLACE FUNCTION httparchive.core_web_vitals.GET_LAB_TBT(har STRING) RETURNS NUMERIC AS (
+  CAST(JSON_VALUE(har, '$._TotalBlockingTime') AS NUMERIC)
+);
+CREATE OR REPLACE FUNCTION httparchive.core_web_vitals.GET_LAB_TTFB(har STRING) RETURNS NUMERIC AS (
+  CAST(JSON_VALUE(har, '$._TTFB') AS NUMERIC)
+);
+
+# Get lab and field structured metrics.
+CREATE OR REPLACE FUNCTION httparchive.core_web_vitals.GET_CWV(har STRING) RETURNS ARRAY<STRUCT<env STRING, metric STRING, value NUMERIC>> AS (
+  [
+    STRUCT('field' AS env, 'LCP' AS metric, httparchive.core_web_vitals.GET_CRUX_LCP(har) AS value),
+    STRUCT('field' AS env, 'FID' AS metric, httparchive.core_web_vitals.GET_CRUX_FID(har) AS value),
+    STRUCT('field' AS env, 'CLS' AS metric, httparchive.core_web_vitals.GET_CRUX_CLS(har) AS value),
+    STRUCT('field' AS env, 'INP' AS metric, httparchive.core_web_vitals.GET_CRUX_INP(har) AS value),
+    STRUCT('field' AS env, 'TTFB' AS metric, httparchive.core_web_vitals.GET_CRUX_TTFB(har) AS value),
+    STRUCT('lab' AS env, 'LCP' AS metric, httparchive.core_web_vitals.GET_LAB_LCP(har) AS value),
+    STRUCT('lab' AS env, 'FID' AS metric, httparchive.core_web_vitals.GET_LAB_TBT(har) AS value),
+    STRUCT('lab' AS env, 'CLS' AS metric, httparchive.core_web_vitals.GET_LAB_CLS(har) AS value),
+    STRUCT('lab' AS env, 'TTFB' AS metric, httparchive.core_web_vitals.GET_LAB_TTFB(har) AS value)
+  ]
+);
+
+# Helper function to calculate the percent change in scores.
+CREATE OR REPLACE FUNCTION httparchive.core_web_vitals.CALC_PCT_DIFF(before NUMERIC, after NUMERIC) RETURNS NUMERIC AS (
+  SAFE_DIVIDE(after - before, before)
+);
+
+# Get all structured audits.
+# Generated from lighthouse_cwv.js.
 CREATE OR REPLACE FUNCTION httparchive.core_web_vitals.GET_AUDITS(lhr STRING) RETURNS ARRAY<STRUCT<metric STRING, audit STRING, category STRING, audit_group STRING, score FLOAT64>> AS (
 [
   STRUCT('FCP' AS metric, 'server-response-time' AS audit, 'performance' AS category, 'metrics' AS audit_group, SAFE_CAST(JSON_VALUE(lhr, '$.audits."server-response-time".score') AS FLOAT64) AS score),
