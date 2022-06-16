@@ -25,6 +25,12 @@ WITH audits_with_impact AS (
     END AS rank
   FROM
     `httparchive.summary_pages.2022_06_01_mobile`
+  UNION ALL
+  SELECT
+    url,
+    'ALL' AS rank
+  FROM
+    `httparchive.summary_pages.2022_06_01_mobile`
 ), failing_audits AS (
   SELECT
     audit.audit,
