@@ -13,6 +13,13 @@ WITH audits_with_impact AS (
     COUNT(DISTINCT url) OVER (PARTITION BY app) AS total
   FROM
     `httparchive.technologies.2022_06_01_mobile`
+  UNION ALL
+  SELECT
+    url,
+    'ALL' AS technology,
+    COUNT(0) OVER () AS total
+  FROM
+    `httparchive.summary_pages.2022_06_01_mobile`
 ), ranks AS (
   SELECT
     url,
