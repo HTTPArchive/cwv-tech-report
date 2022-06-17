@@ -5,7 +5,7 @@ WITH audits_with_impact AS (
     technology,
     audit
   FROM
-    `httparchive.scratchspace.lh_cwv_stats`
+    `httparchive.core_web_vitals.lighthouse_stats`
 ), technologies AS (
   SELECT DISTINCT
     url,
