@@ -25,32 +25,32 @@ try {
 
 ######### BEGIN MONTHLY UPDATES
 WITH RELEASE_DATE AS (
-  SELECT CAST('2022-05-01' AS DATE)
+  SELECT CAST('2022-07-01' AS DATE)
 ), TECHNOLOGIES_RELEASE AS (
   SELECT
     _TABLE_SUFFIX,
     *
   FROM
-    `httparchive.technologies.2022_05_12_*`
+    `httparchive.technologies.2022_07_01_*`
 ), SUMMARY_PAGES_RELEASE AS (
   SELECT
     _TABLE_SUFFIX,
     *
   FROM
-    `httparchive.summary_pages.2022_05_12_*`
+    `httparchive.experimental_summary_pages.2022_07_01_*`
 ), LIGHTHOUSE_RELEASE AS (
   SELECT
     _TABLE_SUFFIX,
     *
   FROM
-    `httparchive.lighthouse.2022_05_12_*`
+    `httparchive.lighthouse.2022_07_01_*`
 ), pages AS (
   SELECT
     _TABLE_SUFFIX,
     url,
     COALESCE(JSON_VALUE(payload, '$._metadata.root_page_url'), url) AS root_page_url
   FROM
-    `httparchive.pages.2022_05_12_*`
+    `httparchive.pages.2022_07_01_*`
 ),
 ######### END MONTHLY UPDATES
 
