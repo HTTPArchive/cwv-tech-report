@@ -35,12 +35,18 @@ WITH geo_summary AS (
     `chrome-ux-report`.experimental.GET_COUNTRY(country_code) AS geo
   FROM
     `chrome-ux-report.materialized.country_summary`
+  WHERE
+    yyyymm = CAST(FORMAT_DATE('%Y%m', YYYYMMDD) AS INT64) AND
+    device IN ('desktop', 'phone')
 UNION ALL
   SELECT
     * EXCEPT (yyyymmdd, p75_fid_origin, p75_cls_origin, p75_lcp_origin, p75_inp_origin),
     'ALL' AS geo
   FROM
     `chrome-ux-report.materialized.device_summary`
+  WHERE
+    date = DATE(YYYYMMDD) AND
+    device IN ('desktop', 'phone')
 ),
 
 crux AS (
@@ -79,8 +85,6 @@ crux AS (
     geo_summary,
     UNNEST([1000, 10000, 100000, 1000000, 10000000, 100000000]) AS _rank
   WHERE
-    date = YYYYMMDD AND
-    device IN ('desktop', 'phone') AND
     rank <= _rank
 ),
 
@@ -136,31 +140,11 @@ summary_stats AS (
   SELECT
     client,
     page AS url,
+    root_page AS root_page_url,
     CAST(JSON_VALUE(summary, '$.bytesTotal') AS INT64) AS bytesTotal,
     CAST(JSON_VALUE(summary, '$.bytesJS') AS INT64) AS bytesJS,
-    CAST(JSON_VALUE(summary, '$.bytesImg') AS INT64) AS bytesImg
-  FROM
-    `httparchive.all.pages`
-  WHERE
-    date = YYYYMMDD
-),
-
-lighthouse AS (
-  SELECT
-    client,
-    page AS url,
+    CAST(JSON_VALUE(summary, '$.bytesImg') AS INT64) AS bytesImg,
     GET_LIGHTHOUSE_CATEGORY_SCORES(JSON_QUERY(lighthouse, '$.categories')) AS lighthouse_category
-  FROM
-    `httparchive.all.pages`
-  WHERE
-    date = YYYYMMDD
-),
-
-pages AS (
-  SELECT
-    client,
-    page AS url,
-    root_page AS root_page_url
   FROM
     `httparchive.all.pages`
   WHERE
@@ -182,7 +166,7 @@ lab_data AS (
     CAST(AVG(lighthouse_category.pwa) AS NUMERIC) AS pwa,
     CAST(AVG(lighthouse_category.seo) AS NUMERIC) AS seo
   FROM
-    pages
+    summary_stats
   JOIN
     technologies
   USING
@@ -191,14 +175,6 @@ lab_data AS (
     categories
   USING
     (app)
-  JOIN
-    summary_stats
-  USING
-    (client, url)
-  LEFT JOIN
-    lighthouse
-  USING
-    (client, url)
   GROUP BY
     client,
     root_page_url,
