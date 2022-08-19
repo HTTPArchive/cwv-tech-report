@@ -1,5 +1,5 @@
 # UPDATE THIS EACH MONTH
-DECLARE YYYYMMDD DATE DEFAULT '2022-07-01';
+DECLARE _YYYYMMDD DATE DEFAULT '2022-07-01';
 
 
 CREATE TEMP FUNCTION IS_GOOD(good FLOAT64, needs_improvement FLOAT64, poor FLOAT64) RETURNS BOOL AS (
@@ -36,7 +36,7 @@ WITH geo_summary AS (
   FROM
     `chrome-ux-report.materialized.country_summary`
   WHERE
-    yyyymm = CAST(FORMAT_DATE('%Y%m', YYYYMMDD) AS INT64) AND
+    yyyymm = CAST(FORMAT_DATE('%Y%m', _YYYYMMDD) AS INT64) AND
     device IN ('desktop', 'phone')
 UNION ALL
   SELECT
@@ -45,7 +45,7 @@ UNION ALL
   FROM
     `chrome-ux-report.materialized.device_summary`
   WHERE
-    date = DATE(YYYYMMDD) AND
+    date = _YYYYMMDD AND
     device IN ('desktop', 'phone')
 ),
 
@@ -97,7 +97,7 @@ technologies AS (
     `httparchive.all.pages`,
     UNNEST(technologies) AS technology
   WHERE
-    date = YYYYMMDD AND
+    date = _YYYYMMDD AND
     technology.technology IS NOT NULL AND
     technology.technology != ''
 UNION ALL
@@ -108,7 +108,7 @@ UNION ALL
   FROM
     `httparchive.all.pages`
   WHERE
-    date = YYYYMMDD
+    date = _YYYYMMDD
 ),
 
 categories AS (
@@ -120,7 +120,7 @@ categories AS (
     UNNEST(technologies) AS technology,
     UNNEST(technology.categories) AS category
   WHERE
-    date = YYYYMMDD
+    date = _YYYYMMDD
   GROUP BY
     app
 UNION ALL
@@ -132,7 +132,7 @@ UNION ALL
     UNNEST(technologies) AS technology,
     UNNEST(technology.categories) AS category
   WHERE
-    date = YYYYMMDD AND
+    date = _YYYYMMDD AND
     client = 'mobile'
 ),
 
@@ -148,7 +148,7 @@ summary_stats AS (
   FROM
     `httparchive.all.pages`
   WHERE
-    date = YYYYMMDD
+    date = _YYYYMMDD
 ),
 
 lab_data AS (
@@ -183,7 +183,7 @@ lab_data AS (
 
 
 SELECT
-  YYYYMMDD AS date,
+  _YYYYMMDD AS date,
   geo,
   rank,
   ANY_VALUE(category) AS category,
