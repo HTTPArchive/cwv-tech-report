@@ -1,3 +1,7 @@
+# UPDATE THIS EACH MONTH
+DECLARE _YYYYMMDD DATE DEFAULT '2022-07-01';
+
+
 CREATE TEMP FUNCTION IS_GOOD(good FLOAT64, needs_improvement FLOAT64, poor FLOAT64) RETURNS BOOL AS (
   SAFE_DIVIDE(good, good + needs_improvement + poor) >= 0.75
 );
@@ -23,51 +27,29 @@ try {
 }
 ''';
 
-######### BEGIN MONTHLY UPDATES
-WITH RELEASE_DATE AS (
-  SELECT CAST('2022-07-01' AS DATE)
-), TECHNOLOGIES_RELEASE AS (
-  SELECT
-    _TABLE_SUFFIX,
-    *
-  FROM
-    `httparchive.technologies.2022_07_01_*`
-), SUMMARY_PAGES_RELEASE AS (
-  SELECT
-    _TABLE_SUFFIX,
-    *
-  FROM
-    `httparchive.summary_pages.2022_07_01_*`
-), LIGHTHOUSE_RELEASE AS (
-  SELECT
-    _TABLE_SUFFIX,
-    *
-  FROM
-    `httparchive.lighthouse.2022_07_01_*`
-), pages AS (
-  SELECT
-    _TABLE_SUFFIX,
-    url,
-    COALESCE(JSON_VALUE(payload, '$._metadata.root_page_url'), url) AS root_page_url
-  FROM
-    `httparchive.pages.2022_07_01_*`
-),
-######### END MONTHLY UPDATES
 
-geo_summary AS (
+WITH geo_summary AS (
   SELECT
     CAST(REGEXP_REPLACE(CAST(yyyymm AS STRING), r'(\d{4})(\d{2})', r'\1-\2-01') AS DATE) AS date,
     * EXCEPT (country_code),
     `chrome-ux-report`.experimental.GET_COUNTRY(country_code) AS geo
   FROM
     `chrome-ux-report.materialized.country_summary`
+  WHERE
+    yyyymm = CAST(FORMAT_DATE('%Y%m', _YYYYMMDD) AS INT64) AND
+    device IN ('desktop', 'phone')
 UNION ALL
   SELECT
     * EXCEPT (yyyymmdd, p75_fid_origin, p75_cls_origin, p75_lcp_origin, p75_inp_origin),
     'ALL' AS geo
   FROM
     `chrome-ux-report.materialized.device_summary`
-), crux AS (
+  WHERE
+    date = _YYYYMMDD AND
+    device IN ('desktop', 'phone')
+),
+
+crux AS (
   SELECT
     geo,
     CASE _rank
@@ -103,32 +85,42 @@ UNION ALL
     geo_summary,
     UNNEST([1000, 10000, 100000, 1000000, 10000000, 100000000]) AS _rank
   WHERE
-    date = (SELECT * FROM RELEASE_DATE) AND
-    device IN ('desktop', 'phone') AND
     rank <= _rank
-), technologies AS (
-  SELECT DISTINCT
-    app,
-    _TABLE_SUFFIX AS client,
-    url
+),
+
+technologies AS (
+  SELECT
+    technology.technology AS app,
+    client,
+    page AS url
   FROM
-    TECHNOLOGIES_RELEASE
+    `httparchive.all.pages`,
+    UNNEST(technologies) AS technology
   WHERE
-    app IS NOT NULL AND
-    app != ''
+    date = _YYYYMMDD AND
+    technology.technology IS NOT NULL AND
+    technology.technology != ''
 UNION ALL
   SELECT
     'ALL' AS app,
-    IF(ENDS_WITH(_TABLE_SUFFIX, 'desktop'), 'desktop', 'mobile') AS client,
-    url
+    client,
+    page AS url
   FROM
-    SUMMARY_PAGES_RELEASE
-), categories AS (
+    `httparchive.all.pages`
+  WHERE
+    date = _YYYYMMDD
+),
+
+categories AS (
   SELECT
-    app,
+    technology.technology AS app,
     ARRAY_TO_STRING(ARRAY_AGG(DISTINCT category IGNORE NULLS ORDER BY category), ', ') AS category
   FROM
-    TECHNOLOGIES_RELEASE
+    `httparchive.all.pages`,
+    UNNEST(technologies) AS technology,
+    UNNEST(technology.categories) AS category
+  WHERE
+    date = _YYYYMMDD
   GROUP BY
     app
 UNION ALL
@@ -136,24 +128,30 @@ UNION ALL
     'ALL' AS app,
     ARRAY_TO_STRING(ARRAY_AGG(DISTINCT category IGNORE NULLS ORDER BY category), ', ') AS category
   FROM
-    TECHNOLOGIES_RELEASE
-), summary_stats AS (
+    `httparchive.all.pages`,
+    UNNEST(technologies) AS technology,
+    UNNEST(technology.categories) AS category
+  WHERE
+    date = _YYYYMMDD AND
+    client = 'mobile'
+),
+
+summary_stats AS (
   SELECT
-    _TABLE_SUFFIX AS client,
-    url,
-    bytesTotal,
-    bytesJS,
-    bytesImg
+    client,
+    page AS url,
+    root_page AS root_page_url,
+    CAST(JSON_VALUE(summary, '$.bytesTotal') AS INT64) AS bytesTotal,
+    CAST(JSON_VALUE(summary, '$.bytesJS') AS INT64) AS bytesJS,
+    CAST(JSON_VALUE(summary, '$.bytesImg') AS INT64) AS bytesImg,
+    GET_LIGHTHOUSE_CATEGORY_SCORES(JSON_QUERY(lighthouse, '$.categories')) AS lighthouse_category
   FROM
-    SUMMARY_PAGES_RELEASE
-), lighthouse AS (
-  SELECT
-    _TABLE_SUFFIX AS client,
-    url,
-    GET_LIGHTHOUSE_CATEGORY_SCORES(JSON_QUERY(report, '$.categories')) AS lighthouse_category
-  FROM
-    LIGHTHOUSE_RELEASE
-), lab_data AS (
+    `httparchive.all.pages`
+  WHERE
+    date = _YYYYMMDD
+),
+
+lab_data AS (
   SELECT
     client,
     root_page_url,
@@ -168,23 +166,15 @@ UNION ALL
     CAST(AVG(lighthouse_category.pwa) AS NUMERIC) AS pwa,
     CAST(AVG(lighthouse_category.seo) AS NUMERIC) AS seo
   FROM
-    pages
+    summary_stats
   JOIN
     technologies
   USING
-    (url)
+    (client, url)
   JOIN
     categories
   USING
     (app)
-  JOIN
-    summary_stats
-  USING
-    (client, url)
-  LEFT JOIN
-    lighthouse
-  USING
-    (client, url)
   GROUP BY
     client,
     root_page_url,
@@ -193,7 +183,7 @@ UNION ALL
 
 
 SELECT
-  (SELECT * FROM RELEASE_DATE) AS date,
+  _YYYYMMDD AS date,
   geo,
   rank,
   ANY_VALUE(category) AS category,
