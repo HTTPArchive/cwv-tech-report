@@ -1,6 +1,6 @@
 # Core Web Vitals Technology Report
 
-[![image](https://user-images.githubusercontent.com/1120896/135538017-4c9c89fd-4c34-4b7d-ab61-bac636358e1c.png)](https://httparchive.org/reports/cwv-tech)
+<img width="922" alt="image" src="https://user-images.githubusercontent.com/1120896/195381259-d8773221-c01e-49ca-9f3e-b7ffb22eef17.png">
 
 Public dashboard: https://httparchive.org/reports/cwv-tech
 
