@@ -209,10 +209,12 @@ SELECT
   COUNTIF(any_fcp) AS origins_with_any_fcp,
   COUNTIF(any_ttfb) AS origins_with_any_ttfb,
   COUNTIF(any_inp) AS origins_with_any_inp,
+  /* TODO(rviscomi): Switch this to `good_cwv_2024` in March 2024. */
   COUNTIF(good_cwv_2023) AS origins_with_good_cwv,
   COUNTIF(good_cwv_2024) AS origins_with_good_cwv_2024,
   COUNTIF(good_cwv_2023) AS origins_with_good_cwv_2023,
   COUNTIF(any_lcp AND any_cls) AS origins_eligible_for_cwv,
+  /* TODO(rviscomi): Switch this to `good_cwv_2024` in March 2024. */
   SAFE_DIVIDE(COUNTIF(good_cwv_2023), COUNTIF(any_lcp AND any_cls)) AS pct_eligible_origins_with_good_cwv,
   SAFE_DIVIDE(COUNTIF(good_cwv_2024), COUNTIF(any_lcp AND any_cls)) AS pct_eligible_origins_with_good_cwv_2024,
   SAFE_DIVIDE(COUNTIF(good_cwv_2023), COUNTIF(any_lcp AND any_cls)) AS pct_eligible_origins_with_good_cwv_2023,
