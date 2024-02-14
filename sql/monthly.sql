@@ -27,6 +27,8 @@ try {
 }
 ''';
 
+INSERT INTO
+  `httparchive.core_web_vitals.technologies`
 
 WITH geo_summary AS (
   SELECT
