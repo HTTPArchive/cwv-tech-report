@@ -1,5 +1,5 @@
 # UPDATE THIS EACH MONTH
-DECLARE _YYYYMMDD DATE DEFAULT '2022-07-01';
+DECLARE _YYYYMMDD DATE DEFAULT '2024-02-01';
 
 
 CREATE TEMP FUNCTION IS_GOOD(good FLOAT64, needs_improvement FLOAT64, poor FLOAT64) RETURNS BOOL AS (
@@ -27,6 +27,8 @@ try {
 }
 ''';
 
+INSERT INTO
+  `httparchive.core_web_vitals.technologies`
 
 WITH geo_summary AS (
   SELECT
@@ -70,9 +72,14 @@ crux AS (
     IS_GOOD(small_cls, medium_cls, large_cls) AS good_cls,
     IS_NON_ZERO(fast_lcp, avg_lcp, slow_lcp) AS any_lcp,
     IS_GOOD(fast_lcp, avg_lcp, slow_lcp) AS good_lcp,
+    
+    (IS_GOOD(fast_inp, avg_inp, slow_inp) OR fast_inp IS NULL) AND
+    IS_GOOD(small_cls, medium_cls, large_cls) AND
+    IS_GOOD(fast_lcp, avg_lcp, slow_lcp) AS good_cwv_2024,
+    
     (IS_GOOD(fast_fid, avg_fid, slow_fid) OR fast_fid IS NULL) AND
     IS_GOOD(small_cls, medium_cls, large_cls) AND
-    IS_GOOD(fast_lcp, avg_lcp, slow_lcp) AS good_cwv,
+    IS_GOOD(fast_lcp, avg_lcp, slow_lcp) AS good_cwv_2023,
     
     # WV
     IS_NON_ZERO(fast_fcp, avg_fcp, slow_fcp) AS any_fcp,
@@ -204,9 +211,13 @@ SELECT
   COUNTIF(any_fcp) AS origins_with_any_fcp,
   COUNTIF(any_ttfb) AS origins_with_any_ttfb,
   COUNTIF(any_inp) AS origins_with_any_inp,
-  COUNTIF(good_cwv) AS origins_with_good_cwv,
+  COUNTIF(good_cwv_2024) AS origins_with_good_cwv,
+  COUNTIF(good_cwv_2024) AS origins_with_good_cwv_2024,
+  COUNTIF(good_cwv_2023) AS origins_with_good_cwv_2023,
   COUNTIF(any_lcp AND any_cls) AS origins_eligible_for_cwv,
-  SAFE_DIVIDE(COUNTIF(good_cwv), COUNTIF(any_lcp AND any_cls)) AS pct_eligible_origins_with_good_cwv,
+  SAFE_DIVIDE(COUNTIF(good_cwv_2024), COUNTIF(any_lcp AND any_cls)) AS pct_eligible_origins_with_good_cwv,
+  SAFE_DIVIDE(COUNTIF(good_cwv_2024), COUNTIF(any_lcp AND any_cls)) AS pct_eligible_origins_with_good_cwv_2024,
+  SAFE_DIVIDE(COUNTIF(good_cwv_2023), COUNTIF(any_lcp AND any_cls)) AS pct_eligible_origins_with_good_cwv_2023,
   
   # Lighthouse data
   APPROX_QUANTILES(accessibility, 1000)[OFFSET(500)] AS median_lighthouse_score_accessibility,
