@@ -12,11 +12,11 @@ LANGUAGE js AS '''
 try {
   const $ = JSON.parse(categories);
   return {
-    accessibility: $.accessibility.score,
-    'best-practices': $['best-practices'].score,
-    performance: $.performance.score,
-    pwa: $.pwa.score,
-    seo: $.seo.score
+    accessibility: $.accessibility?.score,
+    'best-practices': $['best-practices']?.score,
+    performance: $.performance?.score,
+    pwa: $.pwa?.score,
+    seo: $.seo?.score
   };
 } catch (e) {
   return {};
