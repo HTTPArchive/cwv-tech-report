@@ -1,4 +1,4 @@
-CREATE OR REPLACE TABLE `httparchive.scratchspace.lh_cwv_stats2` AS
+CREATE OR REPLACE TABLE `httparchive.core_web_vitals.lighthouse_impact` AS
 SELECT
   technology,
   metric,
@@ -15,7 +15,7 @@ FROM (
     pages,
     pct_diff
   FROM
-    `httparchive.scratchspace.lh_cwv_stats`
+    `httparchive.core_web_vitals.lighthouse_stats`
   WHERE
     percentile = 50 AND
     NOT improved) AS failed
@@ -28,7 +28,7 @@ JOIN (
     pages,
     pct_diff
   FROM
-    `httparchive.scratchspace.lh_cwv_stats`
+    `httparchive.core_web_vitals.lighthouse_stats`
   WHERE
     percentile = 50 AND
     improved) AS passed
