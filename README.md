@@ -1,3 +1,5 @@
+**This repository is deprecated.** Please see [HTTPArchive/dataform](https://github.com/HTTPArchive/dataform) for the next version of CWV Tech Report data pipeline.
+
 # Core Web Vitals Technology Report
 
 <img width="922" alt="image" src="https://user-images.githubusercontent.com/1120896/195381259-d8773221-c01e-49ca-9f3e-b7ffb22eef17.png">
